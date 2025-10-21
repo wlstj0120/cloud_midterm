@@ -3,7 +3,10 @@ FROM python:3.11
 WORKDIR /app
 
 COPY api/requirements.txt /app/requirements.txt
-RUN pip install --no-cache-dir -r /app/requirements.txt
+
+# --- 이 부분을 수정하세요 ---
+# SSL 인증서 오류를 우회하기 위해 pypi.org와 files.pythonhosted.org를 신뢰할 수 있는 호스트로 추가
+RUN pip install --no-cache-dir -r /app/requirements.txt --trusted-host pypi.org --trusted-host files.pythonhosted.org
 
 COPY api/ /app/
 
