@@ -2,9 +2,9 @@ services:
   api:
     build:
       context: .
-      dockerfile: api/Dockerfile # api/Dockerfile을 명시적으로 지정 (프로젝트 구조에 따라)
+      dockerfile: api/Dockerfile
     volumes:
-      - ./data:/app/data
+      - ./data:/app/data # 데이터 영속성 볼륨 설정
     # 필요시 헬스체크 추가
     expose:
       - "5000" # Flask 앱이 리슨하는 포트 노출
@@ -17,4 +17,4 @@ services:
       - ./nginx/html:/usr/share/nginx/html:ro
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
     depends_on:
-      - api # api 서비스가 먼저 실행되도록 명시 (권장)
+      - api # api 서비스가 먼저 시작되도록 설정

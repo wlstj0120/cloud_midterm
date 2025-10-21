@@ -6,10 +6,10 @@
 # - GET  /api/summary   : {count, total} 반환
 # - GET  /api/download  : expenses.json 파일 다운로드
 
-from flask import Flask, request, jsonify, send_file # 필요한 모듈 추가
+from flask import Flask, request, jsonify, send_file
 from pathlib import Path
 import json, os
-from datetime import datetime # 날짜 형식 검사를 위해 추가
+from datetime import datetime
 
 app = Flask(__name__)
 
@@ -27,7 +27,6 @@ def load_data():
 def save_data(data):
     """데이터를 expenses.json에 저장합니다."""
     with open(DATA_PATH, 'w', encoding='utf-8') as f:
-        # ensure_ascii=False로 한글 깨짐 방지, indent=2로 가독성 향상
         json.dump(data, f, ensure_ascii=False, indent=2)
 
 @app.get("/healthz")
@@ -94,7 +93,7 @@ def summary():
     """현재까지의 기록 수(count)와 총합(total)을 반환합니다."""
     data = load_data()
     count = len(data)
-    total = sum(item.get('amount', 0) for item in data) # 'amount' 키가 없는 경우 0 처리
+    total = sum(item.get('amount', 0) for item in data)
     return jsonify({"count": count, "total": total}), 200
 
 @app.get("/api/download")
@@ -104,9 +103,9 @@ def download_json():
         DATA_PATH,
         as_attachment=True,
         mimetype='application/json',
-        download_name='expenses.json' # 클라이언트에 보여질 파일명
+        download_name='expenses.json'
     )
 
 if __name__ == "__main__":
-    # 적절한 포트(예: 5000)로 0.0.0.0 에서 실행
+    # 적절한 포트(5000)로 0.0.0.0 에서 실행
     app.run(host="0.0.0.0", port=5000)
