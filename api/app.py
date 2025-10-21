@@ -6,7 +6,7 @@
 # - GET  /api/summary   : {count, total} 반환
 # - GET  /api/download  : expenses.json 파일 다운로드
 
-from flask import Flask, request, jsonify, send_file # <- request, jsonify, send_file 추가/활성화
+from flask import Flask, request, send_file, Response # <- jsonify 대신 Response를 사용
 from pathlib import Path
 import json, os
 
@@ -17,7 +17,7 @@ DATA_PATH.parent.mkdir(parents=True, exist_ok=True)
 if not DATA_PATH.exists():
     DATA_PATH.write_text("[]", encoding="utf-8")
 
-# 데이터 로드/저장 헬퍼 함수 추가
+# 데이터 로드/저장 헬퍼 함수
 def load_data():
     with open(DATA_PATH, 'r', encoding='utf-8') as f:
         return json.load(f)
@@ -26,28 +26,40 @@ def save_data(data):
     with open(DATA_PATH, 'w', encoding='utf-8') as f:
         json.dump(data, f, ensure_ascii=False, indent=2)
 
+# Python 객체를 JSON 응답으로 변환하는 헬퍼 함수 (jsonify 대체)
+def json_response(data, status=200):
+    # Python 객체를 JSON 문자열로 변환
+    json_string = json.dumps(data, ensure_ascii=False, indent=2)
+    # Response 객체를 생성하고 Content-Type을 application/json으로 설정
+    return Response(
+        json_string,
+        status=status,
+        mimetype='application/json'
+    )
+
 @app.get("/healthz")
 def healthz():
     return "ok", 200
 
-# 아래 엔드포인트들을 구현하세요. ( 함수명은 임의로 지정한 내용임 )
+# --- 핵심 API 엔드포인트 구현 (json_response 사용) ---
 
-@app.get("/api/records") # <- 주석 해제 및 구현
+@app.get("/api/records")
 def get_records():
-    return jsonify(load_data()), 200
+    # load_data()는 Python 리스트를 반환하며, json_response가 JSON 문자열로 변환
+    return json_response(load_data(), 200)
 
-@app.post("/api/records") # <- 주석 해제 및 구현
+@app.post("/api/records")
 def add_record():
     try:
         record = request.get_json()
         
-        # 최소한의 유효성 검사: 필수 필드 및 금액 양수 여부 확인
+        # 최소한의 유효성 검사
         if not all(k in record for k in ('title', 'amount', 'date')):
-            return jsonify({"error": "Missing fields"}), 400
+            return json_response({"error": "Missing fields"}, 400)
         
         amount = float(record['amount'])
         if amount <= 0:
-            return jsonify({"error": "Amount must be positive"}), 400
+            return json_response({"error": "Amount must be positive"}, 400)
             
         data = load_data()
         data.append({
@@ -57,19 +69,23 @@ def add_record():
         })
         save_data(data)
         
-        return jsonify({"message": "Record added"}), 201
+        # 성공 메시지를 JSON으로 반환
+        return json_response({"message": "Record added"}, 201)
     except:
-        return jsonify({"error": "Invalid data or internal error"}), 500
+        return json_response({"error": "Invalid data or internal error"}, 500)
 
-@app.get("/api/summary") # <- 주석 해제 및 구현
+@app.get("/api/summary")
 def summary():
     data = load_data()
     count = len(data)
     total = sum(item.get('amount', 0) for item in data)
-    return jsonify({"count": count, "total": total}), 200
+    
+    # 계산된 요약을 JSON으로 반환
+    return json_response({"count": count, "total": total}, 200)
 
-@app.get("/api/download") # <- 주석 해제 및 구현
+@app.get("/api/download")
 def download_json():
+    # 파일 다운로드는 send_file을 사용하며, 이는 JSON 데이터 반환과 목적이 다름
     return send_file(
         DATA_PATH,
         as_attachment=True,
@@ -78,4 +94,4 @@ def download_json():
     )
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000) # <- 앱 실행 코드 추가
+    app.run(host="0.0.0.0", port=5000)
