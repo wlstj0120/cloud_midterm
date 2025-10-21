@@ -1,8 +1,14 @@
-# Flask API 간략 버전
+# Flask API를 완성하세요.
+# 요구사항:
+# - 데이터 파일 경로: /app/data/expenses.json  (초기 내용: [])
+# - GET  /api/records   : 저장된 데이터를 JSON으로 반환
+# - POST /api/records   : {title, amount, date} 저장 (유효성 검사 포함)
+# - GET  /api/summary   : {count, total} 반환
+# - GET  /api/download  : expenses.json 파일 다운로드
 
-from flask import Flask, request, jsonify, send_file
+from flask import Flask, request, jsonify, send_file # <- request, jsonify, send_file 추가/활성화
 from pathlib import Path
-import json
+import json, os
 
 app = Flask(__name__)
 
@@ -11,7 +17,7 @@ DATA_PATH.parent.mkdir(parents=True, exist_ok=True)
 if not DATA_PATH.exists():
     DATA_PATH.write_text("[]", encoding="utf-8")
 
-# 데이터 로드/저장 헬퍼 함수 (간결 유지)
+# 데이터 로드/저장 헬퍼 함수 추가
 def load_data():
     with open(DATA_PATH, 'r', encoding='utf-8') as f:
         return json.load(f)
@@ -24,30 +30,26 @@ def save_data(data):
 def healthz():
     return "ok", 200
 
-# GET /api/records
-@app.get("/api/records")
+# 아래 엔드포인트들을 구현하세요. ( 함수명은 임의로 지정한 내용임 )
+
+@app.get("/api/records") # <- 주석 해제 및 구현
 def get_records():
     return jsonify(load_data()), 200
 
-# POST /api/records (유효성 검사 간소화)
-@app.post("/api/records")
+@app.post("/api/records") # <- 주석 해제 및 구현
 def add_record():
-    record = request.get_json()
-    
-    # 필수 필드만 간단히 확인 (title, amount, date)
-    if not all(k in record for k in ('title', 'amount', 'date')):
-        return jsonify({"error": "Missing fields"}), 400
-    
     try:
-        data = load_data()
+        record = request.get_json()
         
-        # amount를 숫자로 변환
+        # 최소한의 유효성 검사: 필수 필드 및 금액 양수 여부 확인
+        if not all(k in record for k in ('title', 'amount', 'date')):
+            return jsonify({"error": "Missing fields"}), 400
+        
         amount = float(record['amount'])
-
-        # amount가 양수인지 간단히 확인
         if amount <= 0:
             return jsonify({"error": "Amount must be positive"}), 400
             
+        data = load_data()
         data.append({
             "title": record['title'].strip(),
             "amount": amount,
@@ -57,23 +59,17 @@ def add_record():
         
         return jsonify({"message": "Record added"}), 201
     except:
-        # 데이터 처리 중 발생할 수 있는 오류를 일반 오류로 처리
-        return jsonify({"error": "Invalid data format or internal error"}), 500
+        return jsonify({"error": "Invalid data or internal error"}), 500
 
-
-# GET /api/summary
-@app.get("/api/summary")
+@app.get("/api/summary") # <- 주석 해제 및 구현
 def summary():
     data = load_data()
     count = len(data)
-    # amount가 없는 경우를 대비해 get() 사용
-    total = sum(item.get('amount', 0) for item in data) 
+    total = sum(item.get('amount', 0) for item in data)
     return jsonify({"count": count, "total": total}), 200
 
-# GET /api/download
-@app.get("/api/download")
+@app.get("/api/download") # <- 주석 해제 및 구현
 def download_json():
-    # send_file은 경로만 지정하면 되므로 매우 간단함
     return send_file(
         DATA_PATH,
         as_attachment=True,
@@ -82,4 +78,4 @@ def download_json():
     )
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000)
+    app.run(host="0.0.0.0", port=5000) # <- 앱 실행 코드 추가
